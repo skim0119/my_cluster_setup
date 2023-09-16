@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "my-cluster-setup"
+version = "0.1.0"
+description = "Cluster configuration and setup scripts."
+authors = ["Seung Hyun Kim <skim0119@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "my_cluster_setup"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+parsl = "1.2.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
