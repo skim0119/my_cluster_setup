@@ -16,9 +16,15 @@ def frontera_mpi_config(
     ranks_per_node=56,
     partition="normal",
     walltime="48:00:00",
+    _blocks=1,
 ):
+    # Limiting number of rank used for each nodes
     if max_ranks_per_node is None:
         max_ranks_per_node = ranks_per_node
+
+    # [development] limit walltime for dev
+    if partition == "development":
+        walltime="02:00:00"
 
     # Partition limits: https://frontera-portal.tacc.utexas.edu/user-guide/running/
     if partition == "normal":
@@ -51,9 +57,9 @@ def frontera_mpi_config(
                     nodes_per_block=num_nodes,  # Number of nodes
                     walltime=walltime,
                     # Set scaling limits
-                    init_blocks=1,
+                    init_blocks=_blocks,
                     min_blocks=0,
-                    max_blocks=1,
+                    max_blocks=_blocks,
                     # Specify number of ranks
                     scheduler_options=f"#SBATCH --ntasks-per-node={max_ranks_per_node}",
                     launcher=SimpleLauncher(),
