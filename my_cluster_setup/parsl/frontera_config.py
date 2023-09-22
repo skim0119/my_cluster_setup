@@ -2,7 +2,7 @@ from parsl.config import Config
 from parsl.channels import LocalChannel
 from parsl.providers import SlurmProvider
 from parsl.executors import HighThroughputExecutor
-from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher
+from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiExecLauncher
 from parsl.addresses import address_by_hostname
 
 from .frontera_init import worker_init
@@ -17,6 +17,7 @@ def frontera_mpi_config(
     partition="normal",
     walltime="48:00:00",
     _blocks=1,
+    wrap_ibrun=False,
 ):
     # Limiting number of rank used for each nodes
     if max_ranks_per_node is None:
@@ -35,6 +36,12 @@ def frontera_mpi_config(
     elif partition == "development":
         assert num_nodes <= 40
     assert num_nodes >= 1
+
+    # Decide launcher
+    if wrap_ibrun:
+        launcher = MpiExecLauncher()
+    else:
+        launcher = SimpleLauncher()
 
     config = Config(
         executors=[
@@ -62,11 +69,11 @@ def frontera_mpi_config(
                     max_blocks=_blocks,
                     # Specify number of ranks
                     scheduler_options=f"#SBATCH --ntasks-per-node={max_ranks_per_node}",
-                    launcher=SimpleLauncher(),
+                    launcher=launcher,
                     worker_init=worker_init,
                     exclusive=False,
                 ),
-            )
+            ),
         ],
     )
     return config
