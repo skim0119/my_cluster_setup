@@ -18,6 +18,7 @@ def frontera_mpi_config(
     walltime="48:00:00",
     _blocks=1,
     wrap_ibrun=False,
+    mpi=False,
 ):
     # Limiting number of rank used for each nodes
     if max_ranks_per_node is None:
@@ -37,11 +38,20 @@ def frontera_mpi_config(
         assert num_nodes <= 40
     assert num_nodes >= 1
 
+    # TODO
     # Decide launcher
     if wrap_ibrun:
         launcher = MpiExecLauncher()
     else:
         launcher = SimpleLauncher()
+
+    # TODO
+    if mpi:
+        scheduler_options=f"#SBATCH --ntasks-per-node={max_ranks_per_node}"
+        cores_per_worker = 1e-6
+    else:
+        scheduler_options=""
+        cores_per_worker = ranks_per_node // max_ranks_per_node
 
     config = Config(
         executors=[
@@ -51,7 +61,7 @@ def frontera_mpi_config(
                 # This option sets our 1 manager running on the lead node of the job
                 # to spin up enough workers to concurrently invoke `ibrun <mpi_app>` calls
                 max_workers=max_ranks_per_node,
-                cores_per_worker=1e-6,
+                cores_per_worker=cores_per_worker,
                 # Set the heartbeat params to avoid faults from periods of network unavailability
                 # Addresses network drop concern from older Claire communication
                 heartbeat_period=60,
@@ -68,7 +78,7 @@ def frontera_mpi_config(
                     min_blocks=0,
                     max_blocks=_blocks,
                     # Specify number of ranks
-                    scheduler_options=f"#SBATCH --ntasks-per-node={max_ranks_per_node}",
+                    scheduler_options=scheduler_options,
                     launcher=launcher,
                     worker_init=worker_init,
                     exclusive=False,
