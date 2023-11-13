@@ -6,7 +6,7 @@ def job_done():
     token = os.environ['SLACK_BOT_TOKEN']
 
     channel = 'nodes'
-    text = 'Job Done.\n    From: {os.uname()}'
+    text = f'Job Done.\n    From: {os.uname()}'
     bot_name = 'monitor'
 
     payload = data = {'token': token, 'channel': channel, 'text': text, 'username': bot_name}
