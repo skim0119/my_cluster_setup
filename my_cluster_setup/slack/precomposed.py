@@ -1,4 +1,5 @@
 import os
+import datetime
 import requests
 
 def job_done():
@@ -6,7 +7,10 @@ def job_done():
     token = os.environ['SLACK_BOT_TOKEN']
 
     channel = 'nodes'
-    text = 'Job Done.\n    From: {os.uname()}'
+    texts = []
+    texts.append(f'Job Done: {datetime.datetime.now()}')
+    texts.append(f'    \n    From: {os.uname()}')
+    text = '\n'.join(texts)
     bot_name = 'monitor'
 
     payload = data = {'token': token, 'channel': channel, 'text': text, 'username': bot_name}
