@@ -174,7 +174,7 @@ class Globus(Storage):
         return False
 
     def retrieve(
-        self, remote_directory: str, local_directory: str, timeout: int = 5 * 60
+        self, remote_directory: str, local_directory: str, timeout: Optional[int] = None
     ) -> bool:
         #if not self.contains(remote_directory):
         #    return False
@@ -195,7 +195,8 @@ class Globus(Storage):
 
         print(f"[Storage] Submitted Globus retrieve, task_id={task_id}")
 
-        #self.tasks_wait(timeout=timeout)
+        if timeout is not None:
+            self.tasks_wait(timeout=timeout)
 
         return True
 
@@ -211,6 +212,23 @@ class Globus(Storage):
 
     def remote_path(self, *append):
         return os.path.join(self.config.remote_endpoint_directory, *append)
+
+def retrieve_recording_from_taiga_to_frontera(prepath, name, timeout=5 * 60):
+    """
+    Call from frontera
+    Need $STORAGE environment variable on frontera
+    """
+    with open(os.path.expanduser("~/.globus-config.json"), "r") as fp:
+        conf = json.load(fp)
+        for k in ["local_endpoint_directory", "remote_endpoint_directory"]:
+            if k in conf:
+                conf[k] = os.path.expanduser(os.path.expandvars(conf[k]))
+
+    globus = Globus(conf)
+    # use class how you like (you can just rewrite it to make it a generic data transfer client)
+    # globus.authorizer
+
+    globus.retrieve(remote_directory=os.path.join(prepath, name), local_directory=name, timeout=timeout)
 
 
 if __name__ == "__main__":
