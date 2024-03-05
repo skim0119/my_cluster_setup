@@ -16,6 +16,7 @@ python = "^3.8"
 parsl = "^1.2.0"
 globus-sdk = "^3.32.0"
 click = "^8.1.7"
+machinable = "^4.9.0"
 
 
 [build-system]
