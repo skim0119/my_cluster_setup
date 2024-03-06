@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import os
 import time
@@ -213,7 +213,7 @@ class Globus(Storage):
     def remote_path(self, *append):
         return os.path.join(self.config.remote_endpoint_directory, *append)
 
-def retrieve_recording_from_taiga_to_frontera(prepath, name, timeout=5 * 60):
+def retrieve_recording_from_taiga_to_frontera(prepath, name, download_name=None, timeout=5 * 60):
     """
     Call from frontera
     Need $STORAGE environment variable on frontera
@@ -227,8 +227,9 @@ def retrieve_recording_from_taiga_to_frontera(prepath, name, timeout=5 * 60):
     globus = Globus(conf)
     # use class how you like (you can just rewrite it to make it a generic data transfer client)
     # globus.authorizer
-
-    globus.retrieve(remote_directory=os.path.join(prepath, name), local_directory=name, timeout=timeout)
+    if download_name is None:
+        download_name = name
+    globus.retrieve(remote_directory=os.path.join(prepath, name), local_directory=download_name, timeout=timeout)
 
 
 if __name__ == "__main__":

@@ -3,14 +3,16 @@ from parsl.channels import LocalChannel
 from parsl.providers import SlurmProvider
 from parsl.executors import HighThroughputExecutor
 from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiExecLauncher
+#from .launchers import SingleNodeLauncher
 from parsl.addresses import address_by_hostname
+#from parsl.jobs.error_handlers import windowed_error_handler
 
 from .frontera_init import worker_init
 
 
 # TODO: add flex partition
 def frontera_mpi_config(
-    label="frontera_htex",
+    label="htex",
     num_nodes=2,
     max_ranks_per_node=None,  # Caps the number of workers per node
     ranks_per_node=56,
@@ -44,6 +46,8 @@ def frontera_mpi_config(
         launcher = MpiExecLauncher()
     else:
         launcher = SimpleLauncher()
+        #launcher = SrunLauncher()
+        #launcher = SingleNodeLauncher()
 
     # TODO
     if mpi:
@@ -55,6 +59,7 @@ def frontera_mpi_config(
         #cores_per_worker = 1
 
     config = Config(
+        retries=4,
         executors=[
             HighThroughputExecutor(
                 label=label,
@@ -66,10 +71,14 @@ def frontera_mpi_config(
                 #mem_per_worker=16,
                 # Set the heartbeat params to avoid faults from periods of network unavailability
                 # Addresses network drop concern from older Claire communication
-                heartbeat_period=60,
-                heartbeat_threshold=300,
+                heartbeat_period=120,
+                heartbeat_threshold=910,
 
-                cpu_affinity="block", # "none", "alternating", "block-reverse"
+                # block_error_handler=windowed_error_handler,
+
+                cpu_affinity="none", # block", # "none", "alternating", "block-reverse"
+                # mpi_launcher="ibrun",
+                #encrypted = False,
 
                 provider=SlurmProvider(
                     partition=partition,
@@ -79,14 +88,15 @@ def frontera_mpi_config(
                     #cores_per_node=ranks_per_node,
                     walltime=walltime,
                     # Set scaling limits
-                    init_blocks=_blocks,
-                    min_blocks=0,
+                    init_blocks=1,
+                    min_blocks=1,
                     max_blocks=_blocks,
                     # Specify number of ranks
                     scheduler_options=scheduler_options,
                     launcher=launcher,
                     worker_init=worker_init,
-                    exclusive=False,
+                    exclusive=True,
+                    parallelism=1.0,
                 ),
             ),
         ],

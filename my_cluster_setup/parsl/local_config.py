@@ -9,6 +9,7 @@ from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiEx
 from parsl.addresses import address_by_hostname
 
 from .utils import get_nodelist
+from .frontera_init import worker_init
 
 def local_threads(label='local_threads', max_threads=None):
     if max_threads is None:
@@ -43,6 +44,7 @@ def local_htex(label="local_htex", work_memory_ratio=1.0, max_workers_per_node=5
     cores_per_worker = int(max_workers_per_node) // max_workers
 
     config = Config(
+        retries=8,
         executors=[
             HighThroughputExecutor(
                 label=label,
@@ -58,45 +60,50 @@ def local_htex(label="local_htex", work_memory_ratio=1.0, max_workers_per_node=5
     )
     return config
 
-def local_htex_accross_ssh(label="local_htex", work_memory_ratio=1.0, max_workers_per_node=56, n_node=1):
+def local_htex_ssh(label="local_htex_ssh", work_memory_ratio=1.0, max_workers_per_node=56, n_node=1):
     """
     work_memory_ratio: Set 1 to be closer to cpu-heavy load.
     Start reducing to 0 to increase memory per job.
     Essentially, the number of worker is determined by max_workers_per_node * ratio.
     Remaining will be used for thread.
     """
-    assert "SLURM_NODELIST" in os.environ, "This function is only for use on a SLURM cluster"
+    # provider = LocalProvider(
+    #     channel=LocalChannel(),
+    #     init_blocks=1,
+    #     max_blocks=1,
+    #     nodes_per_block=1,
+    # )
 
     nodes, current_node = get_nodelist()
 
-    provider = AdHocProvider(
-        channels=[SSHChannel(hostname=node) for node in nodes],
-        worker_init="source ~/localrc_miv_analysis.sh",
-        cmd_timeout=60,
-    )
+    #channels = [LocalChannel()]+[SSHChannel(node) for node in nodes if node != current_node]
+    #channels = [SSHChannel(node) for node in nodes if node != current_node]
+    channels = [SSHChannel(node) for node in nodes]
 
-    #provider = LocalProvider(
-    #    channel=SSHChannel("localhost"),
-    #    init_blocks=1,
-    #    max_blocks=1,
-    #    nodes_per_block=1,
-    #)
+    provider = AdHocProvider(
+        channels=channels,
+        worker_init=worker_init,
+        move_files=False,  # This is rather bug, but needed
+    )
 
     max_workers = int(max_workers_per_node * work_memory_ratio)
     cores_per_worker = int(max_workers_per_node) // max_workers
 
     config = Config(
+        retries=8,
         executors=[
             HighThroughputExecutor(
                 label=label,
                 # This option sets our 1 manager running on the lead node of the job
                 # to spin up enough workers to concurrently invoke `ibrun <mpi_app>` calls
-                max_workers=max_workers * n_node,
+                max_workers=max_workers,
                 cores_per_worker=cores_per_worker,
                 # Set the heartbeat params to avoid faults from periods of network unavailability
                 # Addresses network drop concern from older Claire communication
                 provider=provider,
             )
         ],
+        strategy=None,
+        run_dir=os.path.expandvars("$SCRATCH/runinfo")
     )
     return config
