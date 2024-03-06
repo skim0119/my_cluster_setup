@@ -70,10 +70,9 @@ def local_htex_accross_ssh(label="local_htex", work_memory_ratio=1.0, max_worker
     nodes, current_node = get_nodelist()
 
     provider = AdHocProvider(
-        channels=[
-            SSHChannel(hostname=node) for node in nodes
-        ]
+        channels=[SSHChannel(hostname=node) for node in nodes],
         worker_init="source ~/localrc_miv_analysis.sh",
+        cmd_timeout=60,
     )
 
     #provider = LocalProvider(
