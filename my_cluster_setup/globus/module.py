@@ -20,6 +20,14 @@ from pydantic import BaseModel, Field
 if TYPE_CHECKING:
     from machinable import Interface
 
+def conf_append_local(conf, tag):
+    conf["local_endpoint_id"] = conf[f"{tag}_endpoint_id"]
+    conf["local_endpoint_directory"] = os.path.expanduser(os.path.expandvars(conf[f"{tag}_endpoint_directory"]))
+
+def conf_append_remote(conf, tag):
+    conf["remote_endpoint_id"] = conf[f"{tag}_endpoint_id"]
+    conf["remote_endpoint_directory"] = os.path.expanduser(os.path.expandvars(conf[f"{tag}_endpoint_directory"]))
+
 class Globus(Storage):
     class Config(BaseModel):
         client_id: str = Field("???")
@@ -220,9 +228,8 @@ def retrieve_recording_from_taiga_to_frontera(prepath, name, download_name=None,
     """
     with open(os.path.expanduser("~/.globus-config.json"), "r") as fp:
         conf = json.load(fp)
-        for k in ["local_endpoint_directory", "remote_endpoint_directory"]:
-            if k in conf:
-                conf[k] = os.path.expanduser(os.path.expandvars(conf[k]))
+        conf_append_local(conf, "frontera")
+        conf_append_remote(conf, "taiga")
 
     globus = Globus(conf)
     # use class how you like (you can just rewrite it to make it a generic data transfer client)
@@ -231,14 +238,29 @@ def retrieve_recording_from_taiga_to_frontera(prepath, name, download_name=None,
         download_name = name
     globus.retrieve(remote_directory=os.path.join(prepath, name), local_directory=download_name, timeout=timeout)
 
+def download_results_from_frontera_to_local(prepath, name, timeout=5 * 60):
+    """
+    Call from frontera
+    Need $STORAGE environment variable on frontera
+    Need home-result directory
+    """
+    with open(os.path.expanduser("~/.globus-config.json"), "r") as fp:
+        conf = json.load(fp)
+        conf_append_local(conf, "home")
+        conf_append_remote(conf, "frontera")
+
+    globus = Globus(conf)
+    # use class how you like (you can just rewrite it to make it a generic data transfer client)
+    # globus.authorizer
+    globus.retrieve(remote_directory=os.path.join(prepath, name), local_directory=name, timeout=timeout)
+
 
 if __name__ == "__main__":
     # load config for this machine (or hard-code it)
     with open(os.path.expanduser("~/.globus-config.json"), "r") as fp:
         conf = json.load(fp)
-        for k in ["local_endpoint_directory", "remote_endpoint_directory"]:
-            if k in conf:
-                conf[k] = os.path.expanduser(os.path.expandvars(conf[k]))
+        conf_append_local(conf, "frontera")
+        conf_append_remote(conf, "taiga")
 
     globus = Globus(conf)
     # use class how you like (you can just rewrite it to make it a generic data transfer client)
