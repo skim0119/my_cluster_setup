@@ -192,6 +192,8 @@ class Globus(Storage):
             destination_endpoint=self.config.local_endpoint_id,
             notify_on_succeeded=False,
             notify_on_failed=False,
+            preserve_timestamp=True,
+            sync_level="size",
         )
         task_data.add_item(
             self.remote_path(remote_directory),
