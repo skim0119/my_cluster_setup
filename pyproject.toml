@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "my-cluster-setup"
-version = "0.1.1"
+version = "0.1.2"
 description = "Cluster configuration and setup scripts."
 authors = ["Seung Hyun Kim <skim0119@gmail.com>"]
 license = "MIT"
@@ -9,7 +9,7 @@ packages = [{include = "my_cluster_setup"}]
 
 [tool.poetry.scripts]
 send_startup_message = "my_cluster_setup.slack.job_started:send_message"
-
+create_mpi_host_spyking_circus = "my_cluster_setup.spyking_circus.create_mpi_hostfile:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
