@@ -8,7 +8,7 @@ from parsl.executors.threads import ThreadPoolExecutor
 from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiExecLauncher
 from parsl.addresses import address_by_hostname
 
-from .utils import get_nodelist
+from my_cluster_setup.mpi_hostfile_utils import get_nodelist
 from .frontera_init import worker_init
 
 def local_threads(label='local_threads', max_threads=None):
