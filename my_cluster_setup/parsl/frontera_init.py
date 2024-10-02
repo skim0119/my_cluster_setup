@@ -8,3 +8,4 @@ def get_worker_init(init_source_file="~localrc_miv_analysis.sh"):
     pwd
     which python
     """
+    return worker_init
