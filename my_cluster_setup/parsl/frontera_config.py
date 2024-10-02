@@ -1,3 +1,5 @@
+import os
+scratch_path = os.environ["SCRATCH"]
 from parsl.config import Config
 from parsl.channels import LocalChannel
 from parsl.providers import SlurmProvider
@@ -67,6 +69,7 @@ def frontera_mpi_config(
     config = Config(
         retries=4,
         internal_tasks_max_threads=4,
+        run_dir=os.path.join(scratch_path, "runinfo"),
         executors=[
             HighThroughputExecutor(
                 label=label,
