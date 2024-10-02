@@ -1,9 +1,10 @@
-worker_init = f"""
-# Prepare the computational environment
-source ~/localrc_miv_analysis.sh
+def get_worker_init(init_source_file="~localrc_miv_analysis.sh"):
+    worker_init = f"""
+    # Prepare the computational environment
+    source {init_source_file}
 
-# Print the environment details for debugging
-hostname
-pwd
-which python
-"""
+    # Print the environment details for debugging
+    hostname
+    pwd
+    which python
+    """

@@ -7,7 +7,7 @@ from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiEx
 from parsl.addresses import address_by_hostname, address_by_interface
 #from parsl.jobs.error_handlers import windowed_error_handler
 
-from .frontera_init import worker_init
+from .frontera_init import get_worker_init
 
 
 # TODO: add flex partition
@@ -21,6 +21,7 @@ def frontera_mpi_config(
     _blocks=1,
     wrap_ibrun=False,
     mpi=False,
+    init_source_file=None,
 ):
     # Limiting number of rank used for each nodes
     if max_workers_per_node is None:
@@ -46,7 +47,7 @@ def frontera_mpi_config(
         launcher = MpiExecLauncher()
     else:
         #launcher = SimpleLauncher(debug=False)
-        launcher = SrunLauncher()
+        launcher = SrunLauncher(debug=False)
         #launcher = SingleNodeLauncher()
 
     # TODO
@@ -55,8 +56,13 @@ def frontera_mpi_config(
         cores_per_worker = 1e-6
     else:
         scheduler_options=""
-        # cores_per_worker = ranks_per_node // max_workers_per_node
+        cores_per_worker = ranks_per_node // max_workers_per_node
         # cores_per_worker = 1
+
+    if init_source_file is None:
+        worker_init = get_worker_init()
+    else:
+        worker_init = get_worker_init(init_source_file=init_source_file)
 
     config = Config(
         retries=4,
@@ -69,7 +75,7 @@ def frontera_mpi_config(
                 # This option sets our 1 manager running on the lead node of the job
                 # to spin up enough workers to concurrently invoke `ibrun <mpi_app>` calls
                 max_workers_per_node=max_workers_per_node,
-                # cores_per_worker=cores_per_worker,
+                cores_per_worker=cores_per_worker,
                 # mem_per_worker=16,
                 # Set the heartbeat params to avoid faults from periods of network unavailability
                 # Addresses network drop concern from older Claire communication
