@@ -10,6 +10,7 @@ from parsl.addresses import address_by_hostname, address_by_interface
 #from parsl.jobs.error_handlers import windowed_error_handler
 
 from .frontera_init import get_worker_init
+from .launchers import SrunLauncherV2
 
 
 # TODO: add flex partition
@@ -24,6 +25,7 @@ def frontera_mpi_config(
     wrap_ibrun=False,
     mpi=False,
     init_source_file=None,
+    finalize_cmds: tuple[str]=(),
 ):
     # Limiting number of rank used for each nodes
     if max_workers_per_node is None:
@@ -49,7 +51,8 @@ def frontera_mpi_config(
         launcher = MpiExecLauncher()
     else:
         #launcher = SimpleLauncher(debug=False)
-        launcher = SrunLauncher(debug=False)
+        #launcher = SrunLauncher(debug=False)
+        launcher = SrunLauncherV2(finalize_cmds=finalize_cmds, debug=False)
         #launcher = SingleNodeLauncher()
 
     # TODO

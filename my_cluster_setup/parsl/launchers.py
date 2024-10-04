@@ -4,14 +4,75 @@ import re
 
 import logging
 
-from .utils import parse_nodelist, get_nodelist, create_nodelist_environ, get_runname
 
-from parsl.launchers.launchers import Launcher
+from parsl.launchers.launchers import Launcher, SrunLauncher
+from my_cluster_setup.mpi_hostfile_utils import parse_nodelist, get_nodelist, get_runname
 
 logger = logging.getLogger(__name__)
 
 
+class SrunLauncherV2(SrunLauncher):
+    """
+    
+    """
+
+    def __init__(self, debug: bool = True, overrides: str = '', finalize_cmds: tuple[str]=()):
+        """
+        Parameters
+        ----------
+
+        overrides: str
+             This string will be passed to the srun launcher. Default: ''
+        """
+
+        super().__init__(debug=debug)
+        self.overrides = overrides
+        self.final_cmds = "\n".join(finalize_cmds)
+
+    def __call__(self, command: str, tasks_per_node: int, nodes_per_block: int) -> str:
+        """
+        Args:
+        - command (string): The command string to be launched
+
+        """
+        # cmd = super().__call__(command, tasks_per_node, nodes_per_block)
+        task_blocks = tasks_per_node * nodes_per_block
+        debug_num = int(self.debug)
+
+        cmd = '''#set -e
+export CORES=$SLURM_CPUS_ON_NODE
+export NODES=$SLURM_JOB_NUM_NODES
+
+[[ "{debug}" == "1" ]] && echo "Found cores : $CORES"
+[[ "{debug}" == "1" ]] && echo "Found nodes : $NODES"
+WORKERCOUNT={task_blocks}
+
+cat << SLURM_EOF > cmd_$SLURM_JOB_NAME.sh
+{command}
+SLURM_EOF
+chmod a+x cmd_$SLURM_JOB_NAME.sh
+
+# srun --ntasks {task_blocks} bash cmd_$SLURM_JOB_NAME.sh || echo "something went wrong during srun"
+# srun --ntasks {task_blocks} -l {overrides} bash cmd_$SLURM_JOB_NAME.sh
+ibrun bash cmd_$SLURM_JOB_NAME.sh &
+wait
+
+'''.format(command=command,
+           task_blocks=task_blocks,
+           overrides=self.overrides,
+           debug=debug_num)
+
+        x = f'''
+{cmd}
+{self.final_cmds}
+
+[[ "{debug_num}" == "1" ]] && echo "Done"
+'''
+        return x
+
+
 class GnuParallelLauncher(Launcher):
+    # FIXME
     """ Worker launcher that wraps the user's command with the framework to
     launch multiple command invocations via GNU parallel sshlogin.
 
@@ -41,7 +102,7 @@ class GnuParallelLauncher(Launcher):
         node_list, host_node = get_nodelist()
 
         ssh_login_file = f"{job_name}.nodes"
-        create_nodelist_environ()
+        # create_nodelist_environ()
         logging.debug(f"{node_list}")
 
         x = '''set -e
