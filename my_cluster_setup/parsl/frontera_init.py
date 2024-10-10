@@ -1,4 +1,4 @@
-def get_worker_init(init_source_file="~localrc_miv_analysis.sh"):
+def get_worker_init(init_source_file="~/localrc_miv_analysis.sh"):
     worker_init = f"""
     # Prepare the computational environment
     source {init_source_file}
