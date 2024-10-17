@@ -54,8 +54,8 @@ chmod a+x cmd_$SLURM_JOB_NAME.sh
 
 # srun --ntasks {task_blocks} bash cmd_$SLURM_JOB_NAME.sh || echo "something went wrong during srun"
 # srun --ntasks {task_blocks} -l {overrides} bash cmd_$SLURM_JOB_NAME.sh
-ibrun bash cmd_$SLURM_JOB_NAME.sh &
-wait
+ibrun bash cmd_$SLURM_JOB_NAME.sh #  &
+# wait
 
 '''.format(command=command,
            task_blocks=task_blocks,

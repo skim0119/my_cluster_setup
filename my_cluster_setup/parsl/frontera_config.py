@@ -21,7 +21,7 @@ def frontera_mpi_config(
     ranks_per_node=56,
     partition="normal",
     walltime="48:00:00",
-    _blocks=1,
+    max_blocks=1,
     wrap_ibrun=False,
     mpi=False,
     init_source_file=None,
@@ -50,9 +50,9 @@ def frontera_mpi_config(
     if wrap_ibrun:
         launcher = MpiExecLauncher()
     else:
-        #launcher = SimpleLauncher(debug=False)
+        launcher = SimpleLauncher(debug=False)
         #launcher = SrunLauncher(debug=False)
-        launcher = SrunLauncherV2(finalize_cmds=finalize_cmds, debug=False)
+        #launcher = SrunLauncherV2(finalize_cmds=finalize_cmds, debug=False)
         #launcher = SingleNodeLauncher()
 
     # TODO
@@ -76,7 +76,7 @@ def frontera_mpi_config(
         executors=[
             HighThroughputExecutor(
                 label=label,
-                # address=address_by_hostname(),
+                #address=address_by_hostname(),
                 address=address_by_interface("ib0"),
                 # This option sets our 1 manager running on the lead node of the job
                 # to spin up enough workers to concurrently invoke `ibrun <mpi_app>` calls
@@ -104,7 +104,7 @@ def frontera_mpi_config(
                     # Set scaling limits
                     init_blocks=1,
                     min_blocks=1,
-                    max_blocks=_blocks,
+                    max_blocks=max_blocks,
                     # Specify number of ranks
                     scheduler_options=scheduler_options,
                     launcher=launcher,

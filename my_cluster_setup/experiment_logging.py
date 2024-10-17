@@ -7,6 +7,8 @@ def collect_logfiles(path, tag="log"):
             fpath = os.path.join(root, filename)
             if tag not in filename:
                 continue
+            if not os.path.exists(fpath):  # TODO: This shouldn't be needed
+                continue
             str_list.append(f"log path: {fpath}")
             with open(fpath, "r") as log:
                 str_list.extend(log.readlines())

@@ -39,9 +39,6 @@ def local_htex(label="local_htex", work_memory_ratio=1.0, max_workers_per_node=5
         nodes_per_block=1,
     )
 
-    max_workers = int(max_workers_per_node * work_memory_ratio)
-    cores_per_worker = int(max_workers_per_node) // max_workers
-
     config = Config(
         retries=8,
         executors=[
@@ -49,8 +46,8 @@ def local_htex(label="local_htex", work_memory_ratio=1.0, max_workers_per_node=5
                 label=label,
                 # This option sets our 1 manager running on the lead node of the job
                 # to spin up enough workers to concurrently invoke `ibrun <mpi_app>` calls
-                max_workers=max_workers * n_node,
-                cores_per_worker=cores_per_worker,
+                max_workers_per_node=max_workers_per_node,
+                cores_per_worker=1e-6,
                 # Set the heartbeat params to avoid faults from periods of network unavailability
                 # Addresses network drop concern from older Claire communication
                 provider=provider,
