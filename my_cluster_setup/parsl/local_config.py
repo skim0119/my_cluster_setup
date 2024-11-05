@@ -24,10 +24,9 @@ def local_threads(label='local_threads', max_threads=None):
     )
 
 
-def local_htex(label="local_htex", work_memory_ratio=1.0, max_workers_per_node=56, n_node=1):
+def local_htex(label="local_htex", max_workers_per_node=56, n_node=1):
     from parsl.channels import LocalChannel
     """
-    work_memory_ratio: Set 1 to be closer to cpu-heavy load.
     Start reducing to 0 to increase memory per job.
     Essentially, the number of worker is determined by max_workers_per_node * ratio.
     Remaining will be used for thread.
@@ -56,6 +55,7 @@ def local_htex(label="local_htex", work_memory_ratio=1.0, max_workers_per_node=5
     )
     return config
 
+# Probably not needed anymore..
 def local_htex_ssh(label="local_htex_ssh", work_memory_ratio=1.0, max_workers_per_node=56, n_node=1):
     # TODO: these are outdated from parsl
     from parsl.channels import SSHChannel

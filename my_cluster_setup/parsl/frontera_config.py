@@ -50,9 +50,9 @@ def frontera_mpi_config(
     if wrap_ibrun:
         launcher = MpiExecLauncher()
     else:
-        launcher = SimpleLauncher(debug=False)
+        #launcher = SimpleLauncher(debug=False)
         #launcher = SrunLauncher(debug=False)
-        #launcher = SrunLauncherV2(finalize_cmds=finalize_cmds, debug=False)
+        launcher = SrunLauncherV2(finalize_cmds=finalize_cmds, debug=False)
         #launcher = SingleNodeLauncher()
 
     # TODO
@@ -70,7 +70,7 @@ def frontera_mpi_config(
         worker_init = get_worker_init(init_source_file=init_source_file)
 
     config = Config(
-        retries=4,
+        # retries=4,
         internal_tasks_max_threads=4,
         run_dir=os.path.join(scratch_path, "runinfo"),
         executors=[

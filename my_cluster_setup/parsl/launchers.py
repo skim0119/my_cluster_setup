@@ -39,12 +39,12 @@ class SrunLauncherV2(SrunLauncher):
         task_blocks = tasks_per_node * nodes_per_block
         debug_num = int(self.debug)
 
-        cmd = '''#set -e
+        cmd = f'''#set -e
 export CORES=$SLURM_CPUS_ON_NODE
 export NODES=$SLURM_JOB_NUM_NODES
 
-[[ "{debug}" == "1" ]] && echo "Found cores : $CORES"
-[[ "{debug}" == "1" ]] && echo "Found nodes : $NODES"
+[[ "{debug_num}" == "1" ]] && echo "Found cores : $CORES"
+[[ "{debug_num}" == "1" ]] && echo "Found nodes : $NODES"
 WORKERCOUNT={task_blocks}
 
 cat << SLURM_EOF > cmd_$SLURM_JOB_NAME.sh
@@ -53,14 +53,12 @@ SLURM_EOF
 chmod a+x cmd_$SLURM_JOB_NAME.sh
 
 # srun --ntasks {task_blocks} bash cmd_$SLURM_JOB_NAME.sh || echo "something went wrong during srun"
-# srun --ntasks {task_blocks} -l {overrides} bash cmd_$SLURM_JOB_NAME.sh
-ibrun bash cmd_$SLURM_JOB_NAME.sh #  &
+srun --ntasks {task_blocks} -l {self.overrides} bash cmd_$SLURM_JOB_NAME.sh
+# export IBRUN_TASKS_PER_NODE={tasks_per_node}
+# ibrun bash cmd_$SLURM_JOB_NAME.sh 
 # wait
 
-'''.format(command=command,
-           task_blocks=task_blocks,
-           overrides=self.overrides,
-           debug=debug_num)
+'''
 
         x = f'''
 {cmd}
