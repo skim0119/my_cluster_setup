@@ -9,4 +9,8 @@ fi
 # Extract the hostname argument
 HOSTNAME="$1"
 
-ssh "$HOSTNAME" module load htop; htop
+if ! command -v htop &> /dev/null; then
+   ssh "$HOSTNAME" htop
+else
+   ssh "$HOSTNAME" module load htop; htop
+fi
