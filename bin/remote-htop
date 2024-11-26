@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Check if the hostname is provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 <hostname>"
+    exit 1
+fi
+
+# Extract the hostname argument
+HOSTNAME="$1"
+
+ssh "$HOSTNAME" module load htop; htop
