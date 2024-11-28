@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Extract the hostname argument
+HOSTNAME="$1"
+ssh "$HOSTNAME" -t btop
