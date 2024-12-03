@@ -1,13 +1,19 @@
 import os
-scratch_path = os.environ["SCRATCH"]
 from parsl.config import Config
 from parsl.channels import LocalChannel
 from parsl.providers import SlurmProvider
 from parsl.executors import HighThroughputExecutor
-from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiExecLauncher
-#from .launchers import SingleNodeLauncher
+from parsl.launchers import (
+    SrunMPILauncher,
+    SrunLauncher,
+    SimpleLauncher,
+    MpiExecLauncher,
+)
+
+# from .launchers import SingleNodeLauncher
 from parsl.addresses import address_by_hostname, address_by_interface
-#from parsl.jobs.error_handlers import windowed_error_handler
+
+# from parsl.jobs.error_handlers import windowed_error_handler
 
 from .frontera_init import get_worker_init
 from .launchers import SrunLauncherV2
@@ -25,15 +31,18 @@ def frontera_mpi_config(
     wrap_ibrun=False,
     mpi=False,
     init_source_file=None,
-    finalize_cmds: tuple[str]=(),
+    finalize_cmds: tuple[str] = (),
+    scratch_path: str | None = None,
 ):
+    if scratch_path is None:
+        scratch_path = os.environ["SCRATCH"]
     # Limiting number of rank used for each nodes
     if max_workers_per_node is None:
         max_workers_per_node = ranks_per_node
 
     # [development] limit walltime for dev
     if partition == "development":
-        walltime="02:00:00"
+        walltime = "02:00:00"
 
     # Partition limits: https://frontera-portal.tacc.utexas.edu/user-guide/running/
     if partition == "normal":
@@ -50,17 +59,17 @@ def frontera_mpi_config(
     if wrap_ibrun:
         launcher = MpiExecLauncher()
     else:
-        #launcher = SimpleLauncher(debug=False)
-        #launcher = SrunLauncher(debug=False)
+        # launcher = SimpleLauncher(debug=False)
+        # launcher = SrunLauncher(debug=False)
         launcher = SrunLauncherV2(finalize_cmds=finalize_cmds, debug=False)
-        #launcher = SingleNodeLauncher()
+        # launcher = SingleNodeLauncher()
 
     # TODO
     if mpi:
-        scheduler_options=f"#SBATCH --ntasks-per-node={max_workers_per_node}"
+        scheduler_options = f"#SBATCH --ntasks-per-node={max_workers_per_node}"
         cores_per_worker = 1e-6
     else:
-        scheduler_options=""
+        scheduler_options = ""
         cores_per_worker = ranks_per_node // max_workers_per_node
         # cores_per_worker = 1
 
@@ -76,7 +85,7 @@ def frontera_mpi_config(
         executors=[
             HighThroughputExecutor(
                 label=label,
-                #address=address_by_hostname(),
+                # address=address_by_hostname(),
                 address=address_by_interface("ib0"),
                 # This option sets our 1 manager running on the lead node of the job
                 # to spin up enough workers to concurrently invoke `ibrun <mpi_app>` calls
@@ -87,19 +96,16 @@ def frontera_mpi_config(
                 # Addresses network drop concern from older Claire communication
                 # heartbeat_period=120,
                 # heartbeat_threshold=910,
-
                 # block_error_handler=windowed_error_handler,
-
                 # cpu_affinity="none", # block", # "none", "alternating", "block-reverse"
                 # mpi_launcher="ibrun",
                 # encrypted = False,
-
                 provider=SlurmProvider(
                     partition=partition,
                     # channel=LocalChannel(),
                     cmd_timeout=60,
                     nodes_per_block=num_nodes,  # Number of nodes
-                    #cores_per_node=ranks_per_node,
+                    # cores_per_node=ranks_per_node,
                     walltime=walltime,
                     # Set scaling limits
                     init_blocks=1,
@@ -117,5 +123,14 @@ def frontera_mpi_config(
     )
     return config
 
-CONFIG_FRONTERA_DEV_SIMPLE = frontera_mpi_config(num_nodes=1, partition="development", walltime="02:00:00")
-CONFIG_FRONTERA_DEV_PARALLEL = frontera_mpi_config(num_nodes=4, partition="development", walltime="02:00:00", mpi=False, max_workers_per_node=14)
+
+CONFIG_FRONTERA_DEV_SIMPLE = frontera_mpi_config(
+    num_nodes=1, partition="development", walltime="02:00:00"
+)
+CONFIG_FRONTERA_DEV_PARALLEL = frontera_mpi_config(
+    num_nodes=4,
+    partition="development",
+    walltime="02:00:00",
+    mpi=False,
+    max_workers_per_node=14,
+)
