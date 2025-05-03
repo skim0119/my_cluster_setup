@@ -1,13 +1,20 @@
 import os
-scratch_path = os.environ["SCRATCH"]
 from parsl.config import Config
 from parsl.channels import LocalChannel
 from parsl.providers import SlurmProvider
 from parsl.executors import HighThroughputExecutor
-from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiExecLauncher, WrappedLauncher
-#from .launchers import SingleNodeLauncher
+from parsl.launchers import (
+    SrunMPILauncher,
+    SrunLauncher,
+    SimpleLauncher,
+    MpiExecLauncher,
+    WrappedLauncher,
+)
+
+# from .launchers import SingleNodeLauncher
 from parsl.addresses import address_by_hostname, address_by_interface
-#from parsl.jobs.error_handlers import windowed_error_handler
+
+# from parsl.jobs.error_handlers import windowed_error_handler
 
 from .frontera_init import get_worker_init
 from .launchers import SrunLauncherV2
@@ -23,15 +30,18 @@ def frontera_mpi_config(
     max_blocks=1,
     over_subscription=False,
     init_source_file=None,
-    finalize_cmds: tuple[str]=(),
+    finalize_cmds: tuple[str] = (),
+    scratch_path: str | None = None,
 ):
+    if scratch_path is None:
+        scratch_path = os.environ["SCRATCH"]
     # Limiting number of rank used for each nodes
     if max_workers_per_node is None:
         max_workers_per_node = ranks_per_node
 
     # [development] limit walltime for dev
     if partition == "development":
-        walltime="02:00:00"
+        walltime = "02:00:00"
 
     # Partition limits: https://frontera-portal.tacc.utexas.edu/user-guide/running/
     if partition == "normal":
@@ -105,19 +115,16 @@ def frontera_mpi_config(
                 # Addresses network drop concern from older Claire communication
                 # heartbeat_period=120,
                 # heartbeat_threshold=910,
-
                 # block_error_handler=windowed_error_handler,
-
                 # cpu_affinity="none", # block", # "none", "alternating", "block-reverse"
                 # mpi_launcher="ibrun",
                 # encrypted = False,
-
                 provider=SlurmProvider(
                     partition=partition,
                     # channel=LocalChannel(),
                     cmd_timeout=60,
                     nodes_per_block=num_nodes,  # Number of nodes
-                    #cores_per_node=ranks_per_node,
+                    # cores_per_node=ranks_per_node,
                     walltime=walltime,
                     # Set scaling limits
                     init_blocks=1,
