@@ -5,7 +5,7 @@ def collect_logfiles(path, tag="log"):
     for root, dirs, files in os.walk(path):
         for filename in files:
             fpath = os.path.join(root, filename)
-            if tag.lower() not in filename.lower()::
+            if tag.lower() not in filename.lower():
                 continue
             if not os.path.exists(fpath):  # TODO: This shouldn't be needed
                 continue
