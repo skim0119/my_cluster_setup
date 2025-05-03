@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+PATH_RUNINFO=$SCRATCH/runinfo
+
+# find numeric subdirectories, sort "naturally" (001, 002, … 010, …)
+last_dir=$(find "$PATH_RUNINFO" -maxdepth 1 -type d -printf '%f\n' \
+           | grep -E '^[0-9]+' \
+           | sort -V \
+           | tail -n1)
+
+if [[ -z "$last_dir" ]]; then
+  echo "Error: no numeric runinfo subdirectories found in $PATH_RUNINFO" >&2
+  exit 1
+fi
+
+SUBMITDIR="$PATH_RUNINFO/$last_dir/submit_scripts"
+if [[ ! -d "$SUBMITDIR" ]]; then
+  echo "Error: '$SUBMITDIR' does not exist" >&2
+  exit 1
+fi
+
+echo "Tailing logs in: $SUBMITDIR"
+
+cd $SUBMITDIR
+
