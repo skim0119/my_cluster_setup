@@ -1,5 +1,4 @@
 from parsl.config import Config
-from parsl.channels import LocalChannel
 from parsl.providers import SlurmProvider
 from parsl.executors import HighThroughputExecutor
 from parsl.launchers import SrunMPILauncher, SrunLauncher, SimpleLauncher, MpiExecLauncher
@@ -62,7 +61,6 @@ def bridges2_mpi_config(
 
                 provider=SlurmProvider(
                     partition=partition,
-                    channel=LocalChannel(),
                     cmd_timeout=60,
                     nodes_per_block=num_nodes,  # Number of nodes
                     walltime=walltime,

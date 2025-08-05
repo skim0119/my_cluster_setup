@@ -24,22 +24,26 @@ def local_threads(label='local_threads', max_threads=None):
     )
 
 
-def local_htex(label="local_htex", max_workers_per_node=56, n_node=1):
-    from parsl.channels import LocalChannel
+def local_htex(label="local_htex", max_workers_per_node=56):
     """
     Start reducing to 0 to increase memory per job.
     Essentially, the number of worker is determined by max_workers_per_node * ratio.
     Remaining will be used for thread.
     """
+    from .frontera_init import get_worker_init
+    from parsl.launchers import SingleNodeLauncher, SrunLauncher
+
     provider = LocalProvider(
-        channel=LocalChannel(),
+        launcher=SrunLauncher(),
         init_blocks=1,
         max_blocks=1,
-        nodes_per_block=1,
+        nodes_per_block=os.environ["SLURM_NNODES"],
+        worker_init=get_worker_init(),
     )
 
     config = Config(
         retries=8,
+        run_dir=os.path.expandvars("$SCRATCH/runinfo"),
         executors=[
             HighThroughputExecutor(
                 label=label,
@@ -52,58 +56,5 @@ def local_htex(label="local_htex", max_workers_per_node=56, n_node=1):
                 provider=provider,
             )
         ],
-    )
-    return config
-
-# Probably not needed anymore..
-def local_htex_ssh(label="local_htex_ssh", work_memory_ratio=1.0, max_workers_per_node=56, n_node=1):
-    # TODO: these are outdated from parsl
-    from parsl.channels import SSHChannel
-    from parsl.providers import AdHocProvider
-    from .frontera_init import worker_init
-    """
-    work_memory_ratio: Set 1 to be closer to cpu-heavy load.
-    Start reducing to 0 to increase memory per job.
-    Essentially, the number of worker is determined by max_workers_per_node * ratio.
-    Remaining will be used for thread.
-    """
-    # provider = LocalProvider(
-    #     channel=LocalChannel(),
-    #     init_blocks=1,
-    #     max_blocks=1,
-    #     nodes_per_block=1,
-    # )
-
-    nodes, current_node = get_nodelist()
-
-    #channels = [LocalChannel()]+[SSHChannel(node) for node in nodes if node != current_node]
-    #channels = [SSHChannel(node) for node in nodes if node != current_node]
-    channels = [SSHChannel(node) for node in nodes]
-
-    provider = AdHocProvider(
-        channels=channels,
-        worker_init=worker_init,
-        move_files=False,  # This is rather bug, but needed
-    )
-
-    max_workers = int(max_workers_per_node * work_memory_ratio)
-    cores_per_worker = int(max_workers_per_node) // max_workers
-
-    config = Config(
-        retries=8,
-        executors=[
-            HighThroughputExecutor(
-                label=label,
-                # This option sets our 1 manager running on the lead node of the job
-                # to spin up enough workers to concurrently invoke `ibrun <mpi_app>` calls
-                max_workers=max_workers,
-                cores_per_worker=cores_per_worker,
-                # Set the heartbeat params to avoid faults from periods of network unavailability
-                # Addresses network drop concern from older Claire communication
-                provider=provider,
-            )
-        ],
-        strategy=None,
-        run_dir=os.path.expandvars("$SCRATCH/runinfo")
     )
     return config
