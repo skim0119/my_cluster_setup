@@ -20,13 +20,20 @@ from pydantic import BaseModel, Field
 if TYPE_CHECKING:
     from machinable import Interface
 
+
 def conf_append_local(conf, tag):
     conf["local_endpoint_id"] = conf[f"{tag}_endpoint_id"]
-    conf["local_endpoint_directory"] = os.path.expanduser(os.path.expandvars(conf[f"{tag}_endpoint_directory"]))
+    conf["local_endpoint_directory"] = os.path.expanduser(
+        os.path.expandvars(conf[f"{tag}_endpoint_directory"])
+    )
+
 
 def conf_append_remote(conf, tag):
     conf["remote_endpoint_id"] = conf[f"{tag}_endpoint_id"]
-    conf["remote_endpoint_directory"] = os.path.expanduser(os.path.expandvars(conf[f"{tag}_endpoint_directory"]))
+    conf["remote_endpoint_directory"] = os.path.expanduser(
+        os.path.expandvars(conf[f"{tag}_endpoint_directory"])
+    )
+
 
 class Globus(Storage):
     class Config(BaseModel):
@@ -78,16 +85,12 @@ class Globus(Storage):
                 )
                 time.sleep(0.05)
                 auth_code = input("Please enter the code here: ").strip()
-                tokens = self.auth_client.oauth2_exchange_code_for_tokens(
-                    auth_code
-                )
+                tokens = self.auth_client.oauth2_exchange_code_for_tokens(auth_code)
                 self.auth_file.store(tokens)
                 tokens = tokens.by_resource_server["transfer.api.globus.org"]
             else:
                 # otherwise, we already did login; load the tokens
-                tokens = self.auth_file.get_token_data(
-                    "transfer.api.globus.org"
-                )
+                tokens = self.auth_file.get_token_data("transfer.api.globus.org")
 
             self._authorizer = RefreshTokenAuthorizer(
                 tokens["refresh_token"],
@@ -141,8 +144,7 @@ class Globus(Storage):
         except TransferAPIError as e:
             if (
                 e.code == "Conflict"
-                and e.message
-                == "A transfer with identical paths has not yet completed"
+                and e.message == "A transfer with identical paths has not yet completed"
             ):
                 return False
             elif e.code == "ConsentRequired":
@@ -182,9 +184,13 @@ class Globus(Storage):
         return False
 
     def retrieve(
-        self, remote_directory: str, local_directory: str, timeout: Optional[int] = None
+        self,
+        remote_directory: str,
+        local_directory: str,
+        timeout: Optional[int] = None,
+        block_until_done: Optional[bool] = False,
     ) -> bool:
-        #if not self.contains(remote_directory):
+        # if not self.contains(remote_directory):
         #    return False
 
         task_data = TransferData(
@@ -208,6 +214,13 @@ class Globus(Storage):
         if timeout is not None:
             self.tasks_wait(timeout=timeout)
 
+        if block_until_done:
+            while self.transfer_client.task_wait(
+                task_id, timeout=1, polling_interval=1
+            ):
+                print(".", end="", flush=True)
+            print(f"[Storage] Globus retrieve done, task_id={task_id}")
+
         return True
 
     def tasks_wait(self, timeout: int = 5 * 60) -> None:
@@ -223,7 +236,10 @@ class Globus(Storage):
     def remote_path(self, *append):
         return os.path.join(self.config.remote_endpoint_directory, *append)
 
-def retrieve_recording_from_taiga_to_frontera(prepath, name, download_name=None, timeout=5 * 60):
+
+def retrieve_recording_from_taiga_to_frontera(
+    prepath, name, download_name=None, timeout=None, block_until_done=False
+):
     """
     Call from frontera
     Need $STORAGE environment variable on frontera
@@ -238,9 +254,38 @@ def retrieve_recording_from_taiga_to_frontera(prepath, name, download_name=None,
     # globus.authorizer
     if download_name is None:
         download_name = name
-    globus.retrieve(remote_directory=os.path.join(prepath, name), local_directory=download_name, timeout=timeout)
+    globus.retrieve(
+        remote_directory=os.path.join(prepath, name),
+        local_directory=download_name,
+        timeout=timeout,
+        block_until_done=block_until_done,
+    )
 
-def download_results_from_frontera_to_local(prepath, name, timeout=5 * 60):
+
+def retrieve_recording_from_frontera_to_taiga(
+    prepath, name, download_name, timeout=None, block_until_done=False
+):
+    """
+    Call from frontera
+    Need $STORAGE environment variable on frontera
+    """
+    with open(os.path.expanduser("~/.globus-config.json"), "r") as fp:
+        conf = json.load(fp)
+        conf_append_local(conf, "taiga")
+        conf_append_remote(conf, "frontera")
+
+    globus = Globus(conf)
+    # use class how you like (you can just rewrite it to make it a generic data transfer client)
+    # globus.authorizer
+    globus.retrieve(
+        remote_directory=os.path.join(prepath, name),
+        local_directory=download_name,
+        timeout=timeout,
+        block_until_done=block_until_done,
+    )
+
+
+def download_results_from_frontera_to_local(name, timeout=None):
     """
     Call from frontera
     Need $STORAGE environment variable on frontera
@@ -254,7 +299,11 @@ def download_results_from_frontera_to_local(prepath, name, timeout=5 * 60):
     globus = Globus(conf)
     # use class how you like (you can just rewrite it to make it a generic data transfer client)
     # globus.authorizer
-    globus.retrieve(remote_directory=os.path.join(prepath, name), local_directory=name, timeout=timeout)
+    globus.retrieve(
+        remote_directory=name,
+        local_directory=name,
+        timeout=timeout,
+    )
 
 
 if __name__ == "__main__":
